@@ -1,0 +1,388 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>澳門遊客數據可視化分析</title>
+    <!-- 引入ECharts5 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        /* 暗色科技风全局样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Microsoft YaHei', sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        .chart-card {
+            background-color: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        .chart-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        .chart-desc {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 15px;
+        }
+        #chart1, #chart2 {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chart-card">
+            <h2 class="chart-title">遊客人數前五區域每月人數變化率</h2>
+            <p class="chart-desc">數據說明：統計週期2026年1-6月，變化率為環比上月增長率（%），點擊圖表數據點可在控制台查看原始數據</p>
+            <div id="chart1"></div>
+        </div>
+        <div class="chart-card">
+            <h2 class="chart-title">不同訪澳地區每月人數變化率</h2>
+            <p class="chart-desc">數據說明：統計週期2026年1-6月，變化率為環比上月增長率（%），點擊圖表數據點可在控制台查看原始數據</p>
+            <div id="chart2"></div>
+        </div>
+    </div>
+
+    <script>
+        // 數據準備
+        // 1. 遊客人數前五區域數據
+        const top5Districts = ['路氹填海區', '外港及南灣湖新填海區', '新口岸區', '中區', '氹仔舊城及馬場區'];
+        const months = [1, 2, 3, 4, 5, 6];
+        const districtData = [
+            {
+                name: '路氹填海區',
+                data: [0, 11.49, -16.26, 0.89, 5.07, -9.26],
+                originalData: [
+                    {month: 1, headcount: 6187680, changeRate: 0},
+                    {month: 2, headcount: 6898352, changeRate: 11.49},
+                    {month: 3, headcount: 5776376, changeRate: -16.26},
+                    {month: 4, headcount: 5827636, changeRate: 0.89},
+                    {month: 5, headcount: 6123076, changeRate: 5.07},
+                    {month: 6, headcount: 5556352, changeRate: -9.26}
+                ]
+            },
+            {
+                name: '外港及南灣湖新填海區',
+                data: [0, 5.55, -9.67, -5.56, 4.38, -12.51],
+                originalData: [
+                    {month: 1, headcount: 1372116, changeRate: 0},
+                    {month: 2, headcount: 1448220, changeRate: 5.55},
+                    {month: 3, headcount: 1308164, changeRate: -9.67},
+                    {month: 4, headcount: 1235472, changeRate: -5.56},
+                    {month: 5, headcount: 1289560, changeRate: 4.38},
+                    {month: 6, headcount: 1128248, changeRate: -12.51}
+                ]
+            },
+            {
+                name: '新口岸區',
+                data: [0, 18.43, -17.29, -6.06, 2.88, -15.13],
+                originalData: [
+                    {month: 1, headcount: 1255856, changeRate: 0},
+                    {month: 2, headcount: 1487356, changeRate: 18.43},
+                    {month: 3, headcount: 1230152, changeRate: -17.29},
+                    {month: 4, headcount: 1155600, changeRate: -6.06},
+                    {month: 5, headcount: 1188924, changeRate: 2.88},
+                    {month: 6, headcount: 1009092, changeRate: -15.13}
+                ]
+            },
+            {
+                name: '中區',
+                data: [0, 25.70, -27.67, -0.67, 6.52, -18.71],
+                originalData: [
+                    {month: 1, headcount: 999284, changeRate: 0},
+                    {month: 2, headcount: 1256056, changeRate: 25.70},
+                    {month: 3, headcount: 908504, changeRate: -27.67},
+                    {month: 4, headcount: 902380, changeRate: -0.67},
+                    {month: 5, headcount: 961192, changeRate: 6.52},
+                    {month: 6, headcount: 781320, changeRate: -18.71}
+                ]
+            },
+            {
+                name: '氹仔舊城及馬場區',
+                data: [0, 31.81, -28.84, 5.94, -3.02, -17.81],
+                originalData: [
+                    {month: 1, headcount: 540420, changeRate: 0},
+                    {month: 2, headcount: 712316, changeRate: 31.81},
+                    {month: 3, headcount: 506876, changeRate: -28.84},
+                    {month: 4, headcount: 536968, changeRate: 5.94},
+                    {month: 5, headcount: 520756, changeRate: -3.02},
+                    {month: 6, headcount: 427992, changeRate: -17.81}
+                ]
+            }
+        ];
+
+        // 2. 不同訪澳地區數據
+        const origins = ['中國內地', '台灣地區', '整體', '香港'];
+        const originData = [
+            {
+                name: '中國內地',
+                data: [0, 13.62, -17.51, -1.11, 3.03, -12.44],
+                originalData: [
+                    {month: 1, headcount: 3558140, changeRate: 0},
+                    {month: 2, headcount: 4042667, changeRate: 13.62},
+                    {month: 3, headcount: 3334620, changeRate: -17.51},
+                    {month: 4, headcount: 3297468, changeRate: -1.11},
+                    {month: 5, headcount: 3397545, changeRate: 3.03},
+                    {month: 6, headcount: 2974844, changeRate: -12.44}
+                ]
+            },
+            {
+                name: '台灣地區',
+                data: [0, 13.62, -17.51, -1.11, 3.03, -12.44],
+                originalData: [
+                    {month: 1, headcount: 3558140, changeRate: 0},
+                    {month: 2, headcount: 4042667, changeRate: 13.62},
+                    {month: 3, headcount: 3334620, changeRate: -17.51},
+                    {month: 4, headcount: 3297468, changeRate: -1.11},
+                    {month: 5, headcount: 3397545, changeRate: 3.03},
+                    {month: 6, headcount: 2974844, changeRate: -12.44}
+                ]
+            },
+            {
+                name: '整體',
+                data: [0, 13.62, -17.51, -1.11, 3.03, -12.44],
+                originalData: [
+                    {month: 1, headcount: 3558140, changeRate: 0},
+                    {month: 2, headcount: 4042667, changeRate: 13.62},
+                    {month: 3, headcount: 3334620, changeRate: -17.51},
+                    {month: 4, headcount: 3297468, changeRate: -1.11},
+                    {month: 5, headcount: 3397545, changeRate: 3.03},
+                    {month: 6, headcount: 2974844, changeRate: -12.44}
+                ]
+            },
+            {
+                name: '香港',
+                data: [0, 13.62, -17.51, -1.11, 3.03, -12.44],
+                originalData: [
+                    {month: 1, headcount: 3558140, changeRate: 0},
+                    {month: 2, headcount: 4042667, changeRate: 13.62},
+                    {month: 3, headcount: 3334620, changeRate: -17.51},
+                    {month: 4, headcount: 3297468, changeRate: -1.11},
+                    {month: 5, headcount: 3397545, changeRate: 3.03},
+                    {month: 6, headcount: 2974844, changeRate: -12.44}
+                ]
+            }
+        ];
+
+        // 圖表通用配置
+        const commonOption = {
+            backgroundColor: 'transparent',
+            title: {
+                textStyle: {
+                    color: '#00ffff',
+                    fontSize: 18,
+                    textShadow: '0 0 10px rgba(0, 255, 255, 0.5)'
+                }
+            },
+            tooltip: {
+                trigger: 'axis',
+                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                borderColor: '#00ffff',
+                textStyle: {
+                    color: '#e2e8f0'
+                },
+                formatter: function(params) {
+                    let result = params[0].axisValueLabel + '月<br/>';
+                    params.forEach(param => {
+                        result += param.marker + param.seriesName + ': ' + param.value + '%<br/>';
+                    });
+                    return result;
+                }
+            },
+            legend: {
+                data: [],
+                textStyle: {
+                    color: '#e2e8f0'
+                },
+                top: 10,
+                left: 'center'
+            },
+            grid: {
+                left: '3%',
+                right: '3%',
+                bottom: '15%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: months,
+                axisLine: {
+                    lineStyle: {
+                        color: '#475569'
+                    }
+                },
+                axisLabel: {
+                    color: '#94a3b8',
+                    fontSize: 12
+                },
+                splitLine: {
+                    show: false
+                }
+            },
+            yAxis: {
+                type: 'value',
+                name: '變化率 (%)',
+                nameTextStyle: {
+                    color: '#94a3b8',
+                    fontSize: 12
+                },
+                axisLine: {
+                    lineStyle: {
+                        color: '#475569'
+                    }
+                },
+                axisLabel: {
+                    color: '#94a3b8',
+                    fontSize: 12,
+                    formatter: '{value}%'
+                },
+                splitLine: {
+                    lineStyle: {
+                        color: '#334155',
+                        opacity: 0.5
+                    }
+                }
+            },
+            dataZoom: [
+                {
+                    type: 'slider',
+                    start: 0,
+                    end: 100,
+                    xAxisIndex: 0,
+                    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+                    borderColor: '#475569',
+                    fillerColor: 'rgba(0, 255, 255, 0.2)',
+                    handleStyle: {
+                        color: '#00ffff',
+                        borderColor: '#ffffff'
+                    },
+                    textStyle: {
+                        color: '#94a3b8'
+                    }
+                }
+            ],
+            series: [],
+            // 點擊事件
+            onClick: function(params) {
+                console.log('=== 點擊的數據項原始信息 ===');
+                console.log('系列名稱:', params.seriesName);
+                console.log('月份:', params.name);
+                console.log('變化率:', params.value, '%');
+                // 查找原始數據
+                const seriesData = params.seriesName.includes('區') ? districtData : originData;
+                const item = seriesData.find(d => d.name === params.seriesName);
+                if (item) {
+                    const originalItem = item.originalData.find(d => d.month === parseInt(params.name));
+                    if (originalItem) {
+                        console.log('原始數據:', originalItem);
+                    }
+                }
+                console.log('========================');
+            }
+        };
+
+        // 初始化第一個圖表：前五區域
+        const chart1 = echarts.init(document.getElementById('chart1'));
+        const option1 = JSON.parse(JSON.stringify(commonOption));
+        option1.legend.data = top5Districts;
+        option1.series = districtData.map(item => ({
+            name: item.name,
+            type: 'line',
+            data: item.data,
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 8,
+            lineStyle: {
+                width: 3,
+                shadowColor: 'rgba(0, 255, 255, 0.5)',
+                shadowBlur: 10
+            },
+            itemStyle: {
+                color: '#00ffff',
+                borderColor: '#ffffff',
+                borderWidth: 2
+            },
+            areaStyle: {
+                color: {
+                    type: 'linear',
+                    x: 0,
+                    y: 0,
+                    x2: 0,
+                    y2: 1,
+                    colorStops: [
+                        { offset: 0, color: 'rgba(0, 255, 255, 0.3)' },
+                        { offset: 1, color: 'rgba(0, 255, 255, 0.05)' }
+                    ]
+                }
+            }
+        }));
+        chart1.setOption(option1);
+
+        // 初始化第二個圖表：不同訪澳地區
+        const chart2 = echarts.init(document.getElementById('chart2'));
+        const option2 = JSON.parse(JSON.stringify(commonOption));
+        option2.legend.data = origins;
+        option2.series = originData.map(item => ({
+            name: item.name,
+            type: 'line',
+            data: item.data,
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 8,
+            lineStyle: {
+                width: 3,
+                shadowColor: 'rgba(168, 85, 247, 0.5)',
+                shadowBlur: 10
+            },
+            itemStyle: {
+                color: '#a855f7',
+                borderColor: '#ffffff',
+                borderWidth: 2
+            },
+            areaStyle: {
+                color: {
+                    type: 'linear',
+                    x: 0,
+                    y: 0,
+                    x2: 0,
+                    y2: 1,
+                    colorStops: [
+                        { offset: 0, color: 'rgba(168, 85, 247, 0.3)' },
+                        { offset: 1, color: 'rgba(168, 85, 247, 0.05)' }
+                    ]
+                }
+            }
+        }));
+        chart2.setOption(option2);
+
+        // 窗口大小變化時自動調整圖表
+        window.addEventListener('resize', function() {
+            chart1.resize();
+            chart2.resize();
+        });
+    </script>
+</body>
+</html>
