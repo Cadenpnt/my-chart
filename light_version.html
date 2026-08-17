@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>澳門遊客數據可視化分析 - 明亮版</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #f0f4f8;
+    color: #1a202c;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .dashboard-header {
+    text-align: center;
+    margin-bottom: 28px;
+    padding: 24px;
+    background: linear-gradient(135deg, #ffffff 0%, #e8f0fe 100%);
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid #e2e8f0;
+  }
+  .dashboard-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #1e3a5f;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .dashboard-header p {
+    font-size: 14px;
+    color: #64748b;
+  }
+  .chart-container {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid #e2e8f0;
+    padding: 20px 24px 16px;
+    margin-bottom: 24px;
+  }
+  .chart-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1e3a5f;
+    margin-bottom: 4px;
+    padding-left: 10px;
+    border-left: 4px solid #3b82f6;
+  }
+  .chart-subtitle {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 12px;
+    padding-left: 14px;
+  }
+  .chart-box {
+    width: 100%;
+    height: 420px;
+  }
+  .footer-note {
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 16px;
+    padding: 12px;
+  }
+  .kpi-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .kpi-card {
+    flex: 1;
+    min-width: 180px;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    border-top: 3px solid #3b82f6;
+  }
+  .kpi-card:nth-child(2) { border-top-color: #f59e0b; }
+  .kpi-card:nth-child(3) { border-top-color: #10b981; }
+  .kpi-card:nth-child(4) { border-top-color: #ef4444; }
+  .kpi-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 6px;
+  }
+  .kpi-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1e3a5f;
+  }
+  .kpi-trend {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  .kpi-trend.up { color: #10b981; }
+  .kpi-trend.down { color: #ef4444; }
+</style>
+</head>
+<body>
+
+<div class="dashboard-header">
+  <h1>澳門遊客數據可視化分析儀表板</h1>
+  <p>數據期間：2026年1月 - 2026年6月 | 月度環比變化率分析</p>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="kpi-label">監測區域數</div>
+    <div class="kpi-value">24</div>
+    <div class="kpi-trend up">覆蓋澳門半島及離島</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">訪澳來源地</div>
+    <div class="kpi-value">4</div>
+    <div class="kpi-trend up">中國內地 / 香港 / 台灣 / 整體</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">數據月份</div>
+    <div class="kpi-value">6</div>
+    <div class="kpi-trend up">2026.01 - 2026.06</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">數據記錄條數</div>
+    <div class="kpi-value">576</div>
+    <div class="kpi-trend up">已完成清洗與計算</div>
+  </div>
+</div>
+
+<div class="chart-container">
+  <div class="chart-title">圖一：遊客人數前五區域月度人數變化率</div>
+  <div class="chart-subtitle">按期間內總遊客人數排序前五名，展示每月環比變化率（%）</div>
+  <div id="chart1" class="chart-box"></div>
+</div>
+
+<div class="chart-container">
+  <div class="chart-title">圖二：不同訪澳地區月度人數變化率</div>
+  <div class="chart-subtitle">按訪澳來源地分組，展示每月人次環比變化率（%）</div>
+  <div id="chart2" class="chart-box"></div>
+</div>
+
+<div class="footer-note">
+  提示：點擊圖表數據點可在瀏覽器控制台（Console）查看該數據項的全部原始信息 | 拖動底部縮放滑塊可調整顯示範圍
+</div>
+
+<script>
+// ===== 數據 =====
+const months = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06"];
+
+const top5Districts = ["路氹填海區","外港及南灣湖新填海區","新口岸區","中區","氹仔舊城及馬場區"];
+
+const districtMoM = {
+  "路氹填海區": [null, 11.49, -16.26, 0.89, 5.07, -9.26],
+  "外港及南灣湖新填海區": [null, 5.55, -9.67, -5.56, 4.38, -12.51],
+  "新口岸區": [null, 18.43, -17.29, -6.06, 2.88, -15.13],
+  "中區": [null, 25.70, -27.67, -0.67, 6.52, -18.71],
+  "氹仔舊城及馬場區": [null, 31.81, -28.84, 5.94, -3.02, -17.81]
+};
+
+const districtMonthly = {
+  "路氹填海區": {"2026-01":1546920,"2026-02":1724706,"2026-03":1444302,"2026-04":1457134,"2026-05":1531054,"2026-06":1389252},
+  "外港及南灣湖新填海區": {"2026-01":343029,"2026-02":362078,"2026-03":327034,"2026-04":308856,"2026-05":322366,"2026-06":282082},
+  "新口岸區": {"2026-01":275964,"2026-02":326808,"2026-03":270240,"2026-04":253872,"2026-05":261186,"2026-06":221675},
+  "中區": {"2026-01":195640,"2026-02":245898,"2026-03":177882,"2026-04":176692,"2026-05":188214,"2026-06":152958},
+  "氹仔舊城及馬場區": {"2026-01":135105,"2026-02":178074,"2026-03":126708,"2026-04":134240,"2026-05":130188,"2026-06":107017}
+};
+
+const origins = ["中國內地","香港","台灣地區","整體"];
+
+const originMoM = {
+  "中國內地": [null, 18.45, -27.08, -9.34, 13.73, -25.18],
+  "香港": [null, 11.32, -26.50, -3.99, -26.49, -9.88],
+  "台灣地區": [null, -1.26, 53.48, -14.54, 0.75, 14.46],
+  "整體": [null, 11.87, -21.53, -8.41, 2.32, -20.27]
+};
+
+const originMonthly = {
+  "中國內地": {"2026-01":19673595,"2026-02":23302833,"2026-03":16991124,"2026-04":15405396,"2026-05":17521473,"2026-06":13111734},
+  "香港": {"2026-01":6203895,"2026-02":6905835,"2026-03":5076795,"2026-04":4874325,"2026-05":3583365,"2026-06":3229215},
+  "台灣地區": {"2026-01":1029645,"2026-02":1016670,"2026-03":1560285,"2026-04":1333455,"2026-05":1343460,"2026-06":1537665},
+  "整體": {"2026-01":30393000,"2026-02":34000000,"2026-03":26666667,"2026-04":24426667,"2026-05":24993333,"2026-06":19933333}
+};
+
+// 明亮色系調色板
+const lightColors = ['#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+const originColors = ['#2563eb', '#ea580c', '#059669', '#dc2626'];
+
+// ===== 通用配置 =====
+function getCommonOption(title) {
+  return {
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(255,255,255,0.96)',
+      borderColor: '#e2e8f0',
+      borderWidth: 1,
+      padding: [12, 16],
+      textStyle: { color: '#1e293b', fontSize: 13 },
+      axisPointer: {
+        type: 'cross',
+        lineStyle: { color: '#94a3b8', width: 1, type: 'dashed' },
+        crossStyle: { color: '#94a3b8' }
+      },
+      formatter: function(params) {
+        let html = '<div style="font-weight:600;margin-bottom:6px;color:#1e3a5f;">' + params[0].axisValue + '</div>';
+        params.forEach(function(p) {
+          if (p.value !== null && p.value !== undefined) {
+            const arrow = p.value >= 0 ? '▲' : '▼';
+            const color = p.value >= 0 ? '#10b981' : '#ef4444';
+            html += '<div style="display:flex;align-items:center;gap:8px;margin:3px 0;">'
+                  + '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + p.color + ';"></span>'
+                  + '<span style="color:#475569;min-width:140px;">' + p.seriesName + '</span>'
+                  + '<span style="font-weight:600;color:' + color + ';">' + arrow + ' ' + p.value.toFixed(2) + '%</span>'
+                  + '</div>';
+          }
+        });
+        return html;
+      }
+    },
+    legend: {
+      top: 6,
+      icon: 'roundRect',
+      itemWidth: 14,
+      itemHeight: 8,
+      itemGap: 20,
+      textStyle: { color: '#475569', fontSize: 13 },
+      selectedMode: true
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '18%',
+      top: '16%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: months,
+      axisLine: { lineStyle: { color: '#cbd5e1' } },
+      axisTick: { show: false },
+      axisLabel: { color: '#64748b', fontSize: 12, fontWeight: 500 }
+    },
+    yAxis: {
+      type: 'value',
+      name: '變化率 (%)',
+      nameTextStyle: { color: '#64748b', fontSize: 12, padding: [0,0,0,-20] },
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        color: '#64748b',
+        fontSize: 12,
+        formatter: function(v) { return v + '%'; }
+      },
+      splitLine: { lineStyle: { color: '#e2e8f0', type: 'dashed' } }
+    },
+    dataZoom: [
+      {
+        type: 'slider',
+        show: true,
+        xAxisIndex: 0,
+        start: 0,
+        end: 100,
+        height: 24,
+        bottom: 10,
+        borderColor: '#e2e8f0',
+        fillerColor: 'rgba(59,130,246,0.12)',
+        handleStyle: { color: '#3b82f6', borderColor: '#3b82f6' },
+        moveHandleStyle: { color: '#3b82f6' },
+        textStyle: { color: '#64748b', fontSize: 11 },
+        dataBackground: {
+          lineStyle: { color: '#94a3b8' },
+          areaStyle: { color: 'rgba(148,163,184,0.2)' }
+        },
+        selectedDataBackground: {
+          lineStyle: { color: '#3b82f6' },
+          areaStyle: { color: 'rgba(59,130,246,0.25)' }
+        }
+      },
+      {
+        type: 'inside',
+        xAxisIndex: 0,
+        start: 0,
+        end: 100
+      }
+    ]
+  };
+}
+
+// ===== 構建系列 =====
+function buildDistrictSeries() {
+  return top5Districts.map(function(name, idx) {
+    return {
+      name: name,
+      type: 'line',
+      data: districtMoM[name],
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 8,
+      lineStyle: { width: 2.5, color: lightColors[idx] },
+      itemStyle: { color: lightColors[idx], borderColor: '#fff', borderWidth: 2 },
+      emphasis: {
+        focus: 'series',
+        itemStyle: { symbolSize: 12, borderWidth: 3 },
+        lineStyle: { width: 3.5 }
+      },
+      areaStyle: {
+        color: {
+          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: lightColors[idx].replace(')', ',0.18)').replace('rgb','rgba').replace('#','') ? lightColors[idx] + '2e' : lightColors[idx] + '2e' },
+            { offset: 1, color: lightColors[idx] + '05' }
+          ]
+        }
+      },
+      connectNulls: false
+    };
+  });
+}
+
+function buildOriginSeries() {
+  return origins.map(function(name, idx) {
+    return {
+      name: name,
+      type: 'line',
+      data: originMoM[name],
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 8,
+      lineStyle: { width: 2.5, color: originColors[idx] },
+      itemStyle: { color: originColors[idx], borderColor: '#fff', borderWidth: 2 },
+      emphasis: {
+        focus: 'series',
+        itemStyle: { symbolSize: 12, borderWidth: 3 },
+        lineStyle: { width: 3.5 }
+      },
+      areaStyle: {
+        color: {
+          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: originColors[idx] + '2e' },
+            { offset: 1, color: originColors[idx] + '05' }
+          ]
+        }
+      },
+      connectNulls: false
+    };
+  });
+}
+
+// ===== 初始化圖表1 =====
+const chart1 = echarts.init(document.getElementById('chart1'));
+const option1 = getCommonOption();
+option1.series = buildDistrictSeries();
+chart1.setOption(option1);
+
+// 點擊事件 - 打印原始信息
+chart1.on('click', function(params) {
+  if (params.componentType === 'series') {
+    const month = params.name;
+    const district = params.seriesName;
+    const rawInfo = {
+      圖表: '圖一：前五區域月度變化率',
+      區域: district,
+      月份: month,
+      環比變化率: params.value !== null ? params.value + '%' : '基準月（無變化率）',
+      當月遊客人數: districtMonthly[district] ? districtMonthly[district][month] : 'N/A',
+      數據來源: 'task_result.xlsx / Sheet4 / ORIGIN_CN=整體',
+      完整原始字段: {
+        YEAR: parseInt(month.split('-')[0]),
+        MONTH: parseInt(month.split('-')[1]),
+        DISTRICT_CN: district,
+        ORIGIN_CN: '整體',
+        Headcount_allday: districtMonthly[district] ? districtMonthly[district][month] : null
+      }
+    };
+    console.log('========== 點擊數據項原始信息 ==========');
+    console.log(JSON.stringify(rawInfo, null, 2));
+    console.log('========================================');
+  }
+});
+
+// ===== 初始化圖表2 =====
+const chart2 = echarts.init(document.getElementById('chart2'));
+const option2 = getCommonOption();
+option2.series = buildOriginSeries();
+chart2.setOption(option2);
+
+// 點擊事件 - 打印原始信息
+chart2.on('click', function(params) {
+  if (params.componentType === 'series') {
+    const month = params.name;
+    const origin = params.seriesName;
+    const rawInfo = {
+      圖表: '圖二：不同訪澳地區月度變化率',
+      訪澳地區: origin,
+      月份: month,
+      環比變化率: params.value !== null ? params.value + '%' : '基準月（無變化率）',
+      當月總人次: originMonthly[origin] ? originMonthly[origin][month] : 'N/A',
+      數據來源: 'task_result.xlsx / Sheet4 / 按ORIGIN_CN聚合全區域',
+      完整原始字段: {
+        YEAR: parseInt(month.split('-')[0]),
+        MONTH: parseInt(month.split('-')[1]),
+        ORIGIN_CN: origin,
+        PERSONTIME_全區域聚合: originMonthly[origin] ? originMonthly[origin][month] : null
+      }
+    };
+    console.log('========== 點擊數據項原始信息 ==========');
+    console.log(JSON.stringify(rawInfo, null, 2));
+    console.log('========================================');
+  }
+});
+
+// ===== 響應式 =====
+window.addEventListener('resize', function() {
+  chart1.resize();
+  chart2.resize();
+});
+</script>
+</body>
+</html>
